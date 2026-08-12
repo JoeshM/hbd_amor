@@ -778,17 +778,16 @@
       const TARGET_DATE = new Date('2026-08-21T00:00:00'); // ← modifiez cette valeur si nécessaire
       // Code pouvant déverrouiller avant la date (fourni) :
       const UNLOCK_CODE = '201620';
-      const LOCAL_KEY = 'gift_unlocked';
 
+      // No persistent unlock before the date: user must re-enter the code each visit
       function isDateReached() {
         try { return new Date() >= TARGET_DATE; } catch (e) { return false; }
       }
 
+      // unlocked only when the TARGET_DATE is reached. We DO NOT persist pre-date unlocks.
       function isUnlocked() {
-        return localStorage.getItem(LOCAL_KEY) === 'true' || isDateReached();
+        return isDateReached();
       }
-
-      function setUnlocked() { localStorage.setItem(LOCAL_KEY, 'true'); updateGotoTestButton(); }
 
       // update the state of the "Voir le cadeau" button based on unlock state
       const goToTestBtn = document.getElementById('goToTestBtn');
@@ -799,7 +798,7 @@
           goToTestBtn.title = 'Aller voir le cadeau';
         } else {
           goToTestBtn.setAttribute('disabled', 'true');
-          goToTestBtn.title = 'Bloqué jusqu\'à la date ou déverrouillage';
+          goToTestBtn.title = 'Bloqué jusqu\'à la date';
         }
       }
 
@@ -918,6 +917,8 @@
           triggerFireworks();
           fireButton.textContent = '🎉 C’est le jour !';
         }
+        // ensure the "Voir le cadeau" button updates when the date is reached
+        try { updateGotoTestButton(); } catch (e) {}
       }
       updateCountdown();
       setInterval(updateCountdown, 1000);
@@ -1168,12 +1169,11 @@
             return;
           }
           if (v === UNLOCK_CODE) {
-            setUnlocked();
+            // Do not persist the unlock before the target date: simply open the index now.
             unlockFeedbackEl.style.color = '#1b6a3a';
-            unlockFeedbackEl.textContent = 'Code valide — déverrouillage effectué ❤️';
+            unlockFeedbackEl.textContent = 'Code valide — ouverture du cadeau ❤️';
             setTimeout(() => {
               if (lockOverlayEl) { lockOverlayEl.style.display = 'none'; lockOverlayEl.setAttribute('aria-hidden', 'true'); }
-              // après déverrouillage, ouvrir d'abord l'index (comportement demandé)
               openIntroContent();
             }, 700);
           } else {
