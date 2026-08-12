@@ -198,24 +198,22 @@
         }
 
         .numpad button {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
             border-radius: 60px;
             padding: 16px 0;
             font-size: 24px;
             font-weight: 600;
             color: #562c3a;
-            box-shadow: 0 4px 12px rgba(255, 80, 120, 0.1);
-            transition: all 0.15s;
+            box-shadow: 0 8px 20px rgba(217,74,106,0.08);
+            transition: transform 180ms cubic-bezier(.2,.9,.2,1), box-shadow 180ms ease, background 160ms ease;
             cursor: pointer;
             font-family: 'Poppins', sans-serif;
         }
 
-        .numpad button:active {
-            transform: scale(0.92);
-            background: #ffd9e2;
-        }
+        .numpad button:hover { transform: translateY(-4px); box-shadow: 0 18px 28px rgba(217,74,106,0.12); }
+        .numpad button:active { transform: translateY(2px) scale(0.96); background: #ffd9e2; box-shadow: 0 6px 12px rgba(217,74,106,0.06); }
 
         .numpad button.empty {
             background: transparent;
@@ -477,23 +475,38 @@
             transform: scale(0.84);
         }
         .music-list {
-            margin-top: 10px;
+            margin-top: 12px;
             display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .music-list button {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 40px;
-            padding: 6px 18px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #562c3a;
-            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.94);
+            border: 1px solid rgba(217,74,106,0.06);
+            box-shadow: 0 8px 18px rgba(217,74,106,0.04);
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a2a31;
+            text-align: left;
+            transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms ease, background 180ms ease;
             cursor: pointer;
         }
+        .music-list button:hover { transform: translateY(-4px); box-shadow: 0 20px 36px rgba(217,74,106,0.12); }
+        .music-list button:active { transform: scale(0.98); }
+        .music-list .ml-title { flex: 1; color: #4a2a31; }
+        .music-list .ml-artist { color: #b35a74; font-size: 13px; margin-left: 12px; white-space:nowrap; }
+        .music-list button.active { background: linear-gradient(90deg, rgba(255,230,238,0.95), rgba(255,245,246,0.95)); box-shadow: 0 18px 34px rgba(217,74,106,0.10); }
 
         /* CAKE personnalisé pour Francisca */
         .cake-container {
@@ -555,13 +568,25 @@
         .cake-message {
             margin-top: 12px;
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 800;
             color: #D94A6A;
-            text-shadow: 0 2px 12px rgba(255, 80, 120, 0.2);
-            background: rgba(255, 255, 255, 0.5);
-            padding: 8px 24px;
+            text-shadow: 0 4px 18px rgba(255, 80, 120, 0.18);
+            background: linear-gradient(180deg, rgba(255,247,249,0.95), rgba(255,238,244,0.95));
+            padding: 10px 26px;
             border-radius: 40px;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 12px 30px rgba(214,60,120,0.08);
+        }
+
+        /* Video placeholder under the cake */
+        .cake-video {
+            width: 220px;
+            max-width: 86%;
+            margin-top: 12px;
+            border-radius: 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+            background: #000;
+            outline: 4px solid rgba(255,255,255,0.6);
         }
 
         /* bulles avatars */
@@ -1031,12 +1056,12 @@
                     <div class="typewriter">
                         <div class="cake-message">🎉 Joyeux Anniversaire, ma Francisca ! 🎉</div>
                         <div style="font-size:14px; color:#2d1b22; margin-top:12px; white-space:pre-wrap;">
-🌹 Que cette nouvelle année de ta vie soit remplie de bonheur, de sourires et de belles surprises. 🌹
-                        
-✨ J’ai conçu ce petit quelque chose spécialement pour toi, juste pour te faire sourire et te rappeler à quel point tu es précieuse pour moi. ❤️
-                        
-💖 Profite pleinement de ta journée, ma belle. Que ton cœur soit comblé et que chacun de tes souhaits les plus chers se réalise.
-                        
+🌹 Que cette nouvelle année t'apporte douceur, rires et mille jolies surprises. 🌹
+
+✨ J'ai imaginé et créé ce petit cadeau, fait de pixels et de cœur, rien que pour toi — ma façon personnelle de te dire combien tu comptes pour moi. ✨
+
+💖 Profite de chaque instant aujourd'hui ; que ton cœur trouve tout ce qu'il désire. 💖
+
 — Ton homme, Joe ❤️
                         </div>
                     </div>
@@ -1063,7 +1088,7 @@
                         <span id="nextMusic">⏭</span>
                     </div>
                     <div class="music-list">
-                        ${MUSIC_LIST.map((t,i) => `<button data-mi="${i}">${t.title}</button>`).join('')}
+                        ${MUSIC_LIST.map((t,i) => `<button data-mi="${i}"><span class="ml-title">${t.title}</span><span class="ml-artist">${t.artist}</span></button>`).join('')}
                     </div>
                 </div>
             `;
@@ -1113,9 +1138,12 @@
                 currentMusicIndex = (currentMusicIndex + 1) % MUSIC_LIST.length;
                 renderMusic(container);
             });
-            container.querySelectorAll('.music-list button').forEach(btn => {
+            const listButtons = container.querySelectorAll('.music-list button');
+            listButtons.forEach(btn => {
+                const mi = parseInt(btn.dataset.mi);
+                if (mi === currentMusicIndex) btn.classList.add('active');
                 btn.addEventListener('click', function() {
-                    currentMusicIndex = parseInt(this.dataset.mi);
+                    currentMusicIndex = mi;
                     renderMusic(container);
                 });
             });
@@ -1132,8 +1160,12 @@
                     </div>
                     <div class="tier tier-top"></div>
                     <div class="tier"></div>
-                    <div class="cake-message">🎉 Joyeux anniversaire, Francisca ! 🎉</div>
-                    <div style="font-size:14px; color:#b35a74; margin-top:4px;">🌹 Que cette journée t'éblouisse. J'ai imaginé ce petit cadeau rien que pour toi — avec tout mon amour, Joe ❤️</div>
+                    <div class="cake-message">🎉 Joyeux anniversaire, ma belle ! 🎉</div>
+                    <div style="font-size:14px; color:#6b3a44; margin-top:10px; text-align:center; max-width:320px;">
+                      🌹 Que cette année te comble de douceur, de rires et de surprises lumineuses. Voici une petite chose que j'ai créée pour toi, faite avec patience et tout mon cœur.
+                    </div>
+                    <!-- video placeholder: place 'vid1' in images/ as vid1.mp4 -->
+                    <video id="cakeVideo" class="cake-video" src="images/vid1.mp4" controls playsinline preload="metadata">Votre navigateur ne supporte pas la vidéo.</video>
                 </div>
             `;
             container.innerHTML = html;
