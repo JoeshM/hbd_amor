@@ -141,6 +141,32 @@
       transform: scale(1);
     }
 
+    /* Modal lock styles */
+    .lock-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6,2,8,0.62);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      backdrop-filter: blur(6px);
+    }
+    .lock-box {
+      width: min(420px, 92%);
+      background: linear-gradient(180deg, #fff7fb, #fff0f5);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.6);
+      text-align: center;
+      color: #4a2a31;
+    }
+    .lock-box h4 { margin-bottom: 6px; }
+    .lock-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #e8b8c6; margin-top: 8px; font-size: 1rem; }
+    .lock-actions { display:flex; gap:8px; justify-content:center; margin-top:12px; }
+    .fire-btn.secondary { background: linear-gradient(90deg, #ffdfe8, #ffd1e0); color:#6b2f3b; border: 1px solid rgba(200,120,140,0.18); box-shadow: 0 8px 22px rgba(189,90,120,0.06); }
+
     .card {
       position: relative;
       background: linear-gradient(135deg, rgba(255,255,255,0.24), rgba(255,255,255,0.12));
@@ -694,7 +720,10 @@
           <span id="minutes">0</span>min
           <span id="seconds">0</span>sec
         </div>
-        <button class="fire-btn" id="fireButton" type="button">Joyeux anniversaire</button>
+        <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
+          <button class="fire-btn" id="fireButton" type="button">Joyeux anniversaire</button>
+          <button class="fire-btn secondary" id="goToTestBtn" type="button" disabled title="Bloqué jusqu'à la date ou déverrouillé">Voir le cadeau</button>
+        </div>
       </div>
     </div>
   </div>
@@ -709,6 +738,20 @@
         <button type="button" id="prevImage">← Précédent</button>
         <button type="button" id="nextImage">Suivant →</button>
       </div>
+    </div>
+  </div>
+
+  <!-- LOCK / UNLOCK MODAL (contrôle avant la date) -->
+  <div class="lock-overlay" id="lockOverlay" style="display:none;" aria-hidden="true">
+    <div class="lock-box">
+      <h4>Patience, mon amour 🌹</h4>
+      <div id="lockMessage">Le cadeau s'ouvrira le jour J. Si tu disposes d'un code, entre‑le ici pour déverrouiller.</div>
+      <input id="unlockInput" class="lock-input" placeholder="Entrez le code à 6+ chiffres" aria-label="Code de déverrouillage">
+      <div class="lock-actions">
+        <button id="unlockBtn" class="intro-btn" style="padding:10px 14px;">Déverrouiller</button>
+        <button id="closeLockBtn" class="fire-btn secondary" style="padding:10px 12px;">Fermer</button>
+      </div>
+      <div id="unlockFeedback" style="margin-top:8px; color:#8a2335; font-size:0.92rem;"></div>
     </div>
   </div>
 
@@ -729,6 +772,51 @@
       const prevImageBtn = document.getElementById('prevImage');
       const nextImageBtn = document.getElementById('nextImage');
       const galleryItems = Array.from(document.querySelectorAll('.gallery-item'));
+
+      /* ---------- CONFIG: date de déverrouillage (modifiable) ---------- */
+      // EDITEZ ICI la date si besoin (format ISO). Exemple: '2026-08-21T00:00:00'
+      const TARGET_DATE = new Date('2026-08-21T00:00:00'); // ← modifiez cette valeur si nécessaire
+      // Code pouvant déverrouiller avant la date (fourni) :
+      const UNLOCK_CODE = '201620';
+      const LOCAL_KEY = 'gift_unlocked';
+
+      function isDateReached() {
+        try { return new Date() >= TARGET_DATE; } catch (e) { return false; }
+      }
+
+      function isUnlocked() {
+        return localStorage.getItem(LOCAL_KEY) === 'true' || isDateReached();
+      }
+
+      function setUnlocked() { localStorage.setItem(LOCAL_KEY, 'true'); updateGotoTestButton(); }
+
+      // update the state of the "Voir le cadeau" button based on unlock state
+      const goToTestBtn = document.getElementById('goToTestBtn');
+      function updateGotoTestButton() {
+        if (!goToTestBtn) return;
+        if (isUnlocked()) {
+          goToTestBtn.removeAttribute('disabled');
+          goToTestBtn.title = 'Aller voir le cadeau';
+        } else {
+          goToTestBtn.setAttribute('disabled', 'true');
+          goToTestBtn.title = 'Bloqué jusqu\'à la date ou déverrouillage';
+        }
+      }
+
+      // open index intro content (existing behaviour extracted)
+      function openIntroContent() {
+        introScreen.classList.add('closing');
+        appShell.classList.add('ready');
+        setTimeout(() => {
+          introScreen.style.display = 'none';
+          envelope.classList.add('open');
+          document.getElementById('letterCard').classList.add('visible');
+          document.getElementById('letterCard').setAttribute('aria-hidden', 'false');
+          setTimeout(startTyping, 850);
+        }, 900);
+        startMusic();
+      }
+
 
       function createFloatingHearts() {
         const body = document.body;
@@ -981,17 +1069,23 @@
         if (event.key === 'Escape') closeGalleryModal();
       });
 
+      // Click sur "Ouvrir mon cadeau" : soit ouvrir l'index (comportement normal),
+      // soit afficher la modale de verrouillage si la date n'est pas atteinte.
       openGiftBtn.addEventListener('click', () => {
-        introScreen.classList.add('closing');
-        appShell.classList.add('ready');
-        setTimeout(() => {
-          introScreen.style.display = 'none';
-          envelope.classList.add('open');
-          document.getElementById('letterCard').classList.add('visible');
-          document.getElementById('letterCard').setAttribute('aria-hidden', 'false');
-          setTimeout(startTyping, 850);
-        }, 900);
-        startMusic();
+        if (isUnlocked()) {
+          openIntroContent();
+          return;
+        }
+        // afficher modale d'alerte / code
+        const lockOverlay = document.getElementById('lockOverlay');
+        const unlockInput = document.getElementById('unlockInput');
+        const unlockFeedback = document.getElementById('unlockFeedback');
+        if (!lockOverlay) { openIntroContent(); return; }
+        unlockInput.value = '';
+        unlockFeedback.textContent = '';
+        lockOverlay.style.display = 'flex';
+        lockOverlay.setAttribute('aria-hidden', 'false');
+        unlockInput.focus();
       });
 
       envelope.addEventListener('click', () => {
@@ -1058,6 +1152,57 @@
         card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
       });
       card.addEventListener('mouseleave', () => { card.style.transform = 'rotateX(0deg) rotateY(0deg)'; });
+
+      // Lock modal behaviour
+      const lockOverlayEl = document.getElementById('lockOverlay');
+      const unlockBtn = document.getElementById('unlockBtn');
+      const closeLockBtn = document.getElementById('closeLockBtn');
+      const unlockInputEl = document.getElementById('unlockInput');
+      const unlockFeedbackEl = document.getElementById('unlockFeedback');
+
+      if (unlockBtn) {
+        unlockBtn.addEventListener('click', () => {
+          const v = (unlockInputEl && unlockInputEl.value || '').trim();
+          if (!v) {
+            unlockFeedbackEl.textContent = 'Merci d\'entrer le code.';
+            return;
+          }
+          if (v === UNLOCK_CODE) {
+            setUnlocked();
+            unlockFeedbackEl.style.color = '#1b6a3a';
+            unlockFeedbackEl.textContent = 'Code valide — déverrouillage effectué ❤️';
+            setTimeout(() => {
+              if (lockOverlayEl) { lockOverlayEl.style.display = 'none'; lockOverlayEl.setAttribute('aria-hidden', 'true'); }
+              // après déverrouillage, ouvrir d'abord l'index (comportement demandé)
+              openIntroContent();
+            }, 700);
+          } else {
+            unlockFeedbackEl.style.color = '#8a2335';
+            unlockFeedbackEl.textContent = 'Code incorrect. Réessaie.';
+            if (unlockInputEl) unlockInputEl.classList.add('shake');
+            setTimeout(() => { if (unlockInputEl) unlockInputEl.classList.remove('shake'); }, 500);
+          }
+        });
+      }
+      if (closeLockBtn) {
+        closeLockBtn.addEventListener('click', () => {
+          if (lockOverlayEl) { lockOverlayEl.style.display = 'none'; lockOverlayEl.setAttribute('aria-hidden', 'true'); }
+        });
+      }
+
+      // bouton pour aller vers test.html (visible uniquement si déverrouillé/date)
+      if (goToTestBtn) {
+        goToTestBtn.addEventListener('click', () => {
+          if (isUnlocked()) window.location.href = 'test.html';
+          else {
+            // show modal to explain why
+            if (lockOverlayEl) { lockOverlayEl.style.display = 'flex'; lockOverlayEl.setAttribute('aria-hidden', 'false'); }
+          }
+        });
+      }
+
+      // initial state
+      updateGotoTestButton();
 
       const canvas = document.getElementById('bgCanvas');
       const ctx = canvas.getContext('2d');
