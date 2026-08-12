@@ -499,7 +499,23 @@
 
     .gallery-modal.active { display: flex; }
     .gallery-modal .modal-box { position: relative; max-width: min(92vw, 820px); width: 100%; }
-    .gallery-modal img { width: 100%; max-height: 80vh; object-fit: cover; border-radius: 24px; box-shadow: 0 24px 50px rgba(0,0,0,0.35); }
+    .gallery-modal img { width: 100%; max-height: 80vh; object-fit: contain; border-radius: 24px; box-shadow: 0 24px 50px rgba(0,0,0,0.35); background: rgba(0,0,0,0.06); }
+    /* Explosion / hearts animation for gallery end sequence */
+    .gallery-grid { position: relative; }
+    .exploding-heart { position: fixed; pointer-events: none; font-size: 18px; will-change: transform, opacity; transform-origin: center; }
+    .gallery-item.explode {
+      transition: transform 520ms cubic-bezier(.2,.9,.2,1), opacity 520ms ease;
+      transform: scale(0.2) rotate(20deg) translateY(-30px);
+      opacity: 0;
+    }
+    .final-overlay { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(8,4,10,0.6); color: #ffd6e0; font-size: 2.2rem; font-weight: 800; z-index: 2200; opacity: 0; pointer-events: none; transition: opacity 420ms ease; }
+    .final-overlay.show { opacity: 1; pointer-events: auto; }
+    .final-overlay .line { display: flex; align-items: center; gap: 10px; }
+    @keyframes heartFly {
+      0% { transform: translate(0,0) scale(1); opacity: 1; }
+      70% { opacity: 1; }
+      100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+    }
     .gallery-modal .modal-controls { display: flex; justify-content: center; gap: 12px; margin-top: 14px; }
     .gallery-modal button { border: none; padding: 9px 14px; border-radius: 999px; background: rgba(255,255,255,0.92); color: #a11b3e; cursor: pointer; font-weight: 700; }
     .modal-close { position: absolute; top: -12px; right: -10px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 1.3rem; }
@@ -812,6 +828,14 @@
         modalImage.src = galleryItems[index].dataset.full;
         galleryModal.classList.add('active');
         galleryModal.setAttribute('aria-hidden', 'false');
+        // If this is the last image, trigger the gallery explosion sequence shortly after opening
+        if (index === galleryItems.length - 1) {
+          setTimeout(() => {
+            // if modal still open, close it before exploding gallery
+            closeGalleryModal();
+            triggerGalleryExplosion();
+          }, 900);
+        }
       }
       function closeGalleryModal() {
         galleryModal.classList.remove('active');
@@ -820,6 +844,71 @@
       function showNextImage(step) {
         currentImageIndex = (currentImageIndex + step + galleryItems.length) % galleryItems.length;
         modalImage.src = galleryItems[currentImageIndex].dataset.full;
+      }
+
+      // Explosion sequence: animate hearts across the screen from each gallery item,
+      // remove items and show final message.
+      function triggerGalleryExplosion() {
+        const maxHeartsPerItem = 5;
+        let completed = 0;
+        const total = galleryItems.length;
+        galleryItems.forEach((item, idx) => {
+          const rect = item.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+
+          // create a few hearts per item
+          for (let h = 0; h < maxHeartsPerItem; h++) {
+            const heart = document.createElement('span');
+            heart.className = 'exploding-heart';
+            heart.textContent = ['💖','💗','💕','❤️'][Math.floor(Math.random()*4)];
+            const size = 12 + Math.floor(Math.random() * 20);
+            heart.style.fontSize = size + 'px';
+            heart.style.left = centerX - size/2 + 'px';
+            heart.style.top = centerY - size/2 + 'px';
+            // choose random destination offset
+            const dx = (Math.random() - 0.5) * (window.innerWidth * 0.7);
+            const dy = -200 - Math.random() * (window.innerHeight * 0.6);
+            heart.style.setProperty('--dx', dx + 'px');
+            heart.style.setProperty('--dy', dy + 'px');
+            const dur = 700 + Math.floor(Math.random() * 700);
+            heart.style.animation = `heartFly ${dur}ms cubic-bezier(.2,.9,.2,1) forwards`;
+            document.body.appendChild(heart);
+            // remove heart after animation
+            setTimeout(() => heart.remove(), dur + 80);
+          }
+
+          // animate the gallery item itself
+          setTimeout(() => {
+            item.classList.add('explode');
+            // remove item from layout after transition
+            setTimeout(() => {
+              item.style.visibility = 'hidden';
+              completed++;
+              if (completed === total) showFinalOverlay();
+            }, 620);
+          }, idx * 80);
+        });
+      }
+
+      function showFinalOverlay() {
+        // create overlay if not present
+        let overlay = document.getElementById('finalOverlay');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'finalOverlay';
+          overlay.className = 'final-overlay';
+          overlay.innerHTML = `<div class="line">Love you MV <span style=\"font-size:1.2em; margin-left:6px;\">❤️</span></div>`;
+          document.body.appendChild(overlay);
+          // small pulse animation
+          overlay.animate([{ transform: 'scale(0.96)' }, { transform: 'scale(1)' }], { duration: 700, iterations: 2, direction: 'alternate' });
+        }
+        overlay.classList.add('show');
+        // after a while, gently hide floating hearts left in DOM
+        setTimeout(() => {
+          const hearts = document.querySelectorAll('.exploding-heart');
+          hearts.forEach(h => h.remove());
+        }, 4000);
       }
       galleryItems.forEach((item, index) => {
         item.addEventListener('click', () => openGalleryModal(index));
