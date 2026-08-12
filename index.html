@@ -516,6 +516,18 @@
       70% { opacity: 1; }
       100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
     }
+    @keyframes popIn {
+      0% { transform: scale(0.86) translateY(6px); opacity: 0; }
+      60% { transform: scale(1.03) translateY(-4px); opacity: 1; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    @keyframes popOut {
+      0% { transform: scale(1) translateY(0); opacity: 1; }
+      100% { transform: scale(0.9) translateY(8px); opacity: 0; }
+    }
+    .final-overlay .line { animation: popIn 520ms cubic-bezier(.2,.9,.2,1) both; }
+    .final-overlay.exit .line { animation: popOut 420ms ease both; }
+    .image-fly { position: fixed; z-index: 2080; width: 120px; height: auto; border-radius: 12px; box-shadow: 0 18px 36px rgba(0,0,0,0.36); pointer-events: none; will-change: transform, opacity; }
     .gallery-modal .modal-controls { display: flex; justify-content: center; gap: 12px; margin-top: 14px; }
     .gallery-modal button { border: none; padding: 9px 14px; border-radius: 999px; background: rgba(255,255,255,0.92); color: #a11b3e; cursor: pointer; font-weight: 700; }
     .modal-close { position: absolute; top: -12px; right: -10px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 1.3rem; }
@@ -849,45 +861,75 @@
       // Explosion sequence: animate hearts across the screen from each gallery item,
       // remove items and show final message.
       function triggerGalleryExplosion() {
-        const maxHeartsPerItem = 5;
-        let completed = 0;
+        const maxHeartsPerItem = 4;
+        let movedCount = 0;
         const total = galleryItems.length;
+
+        // Step 1: animate each gallery item to shrink and hide (staggered)
         galleryItems.forEach((item, idx) => {
-          const rect = item.getBoundingClientRect();
-          const centerX = rect.left + rect.width / 2;
-          const centerY = rect.top + rect.height / 2;
-
-          // create a few hearts per item
-          for (let h = 0; h < maxHeartsPerItem; h++) {
-            const heart = document.createElement('span');
-            heart.className = 'exploding-heart';
-            heart.textContent = ['💖','💗','💕','❤️'][Math.floor(Math.random()*4)];
-            const size = 12 + Math.floor(Math.random() * 20);
-            heart.style.fontSize = size + 'px';
-            heart.style.left = centerX - size/2 + 'px';
-            heart.style.top = centerY - size/2 + 'px';
-            // choose random destination offset
-            const dx = (Math.random() - 0.5) * (window.innerWidth * 0.7);
-            const dy = -200 - Math.random() * (window.innerHeight * 0.6);
-            heart.style.setProperty('--dx', dx + 'px');
-            heart.style.setProperty('--dy', dy + 'px');
-            const dur = 700 + Math.floor(Math.random() * 700);
-            heart.style.animation = `heartFly ${dur}ms cubic-bezier(.2,.9,.2,1) forwards`;
-            document.body.appendChild(heart);
-            // remove heart after animation
-            setTimeout(() => heart.remove(), dur + 80);
-          }
-
-          // animate the gallery item itself
           setTimeout(() => {
             item.classList.add('explode');
-            // remove item from layout after transition
-            setTimeout(() => {
-              item.style.visibility = 'hidden';
-              completed++;
-              if (completed === total) showFinalOverlay();
-            }, 620);
+            setTimeout(() => { item.style.visibility = 'hidden'; }, 520);
           }, idx * 80);
+        });
+
+        // Step 2: create image clones that traverse the screen one after another
+        const flyDelay = 260; // ms between each image start
+        galleryItems.forEach((item, idx) => {
+          const rect = item.getBoundingClientRect();
+          setTimeout(() => {
+            const imgSrc = item.querySelector('img').src || item.dataset.full;
+            const clone = document.createElement('img');
+            clone.className = 'image-fly';
+            clone.src = imgSrc;
+            clone.style.left = rect.left + 'px';
+            clone.style.top = rect.top + 'px';
+            clone.style.width = rect.width + 'px';
+            clone.style.height = rect.height + 'px';
+            clone.style.opacity = '1';
+            document.body.appendChild(clone);
+
+            // spawn small hearts while the image moves
+            const heartsInterval = setInterval(() => {
+              const h = document.createElement('span');
+              h.className = 'exploding-heart';
+              h.textContent = ['💖','💗','💕','❤️'][Math.floor(Math.random()*4)];
+              const size = 10 + Math.floor(Math.random() * 18);
+              h.style.fontSize = size + 'px';
+              const cx = clone.getBoundingClientRect().left + Math.random() * clone.getBoundingClientRect().width;
+              const cy = clone.getBoundingClientRect().top + Math.random() * clone.getBoundingClientRect().height;
+              h.style.left = cx + 'px';
+              h.style.top = cy + 'px';
+              const dx = (Math.random() - 0.5) * 260;
+              const dy = -120 - Math.random() * 200;
+              h.style.setProperty('--dx', dx + 'px');
+              h.style.setProperty('--dy', dy + 'px');
+              const dur = 520 + Math.floor(Math.random() * 600);
+              h.style.animation = `heartFly ${dur}ms cubic-bezier(.2,.9,.2,1) forwards`;
+              document.body.appendChild(h);
+              setTimeout(() => h.remove(), dur + 60);
+            }, 120);
+
+            // animate clone across screen (to right offscreen)
+            const targetX = window.innerWidth + 140;
+            const deltaX = targetX - rect.left;
+            const travel = 900 + Math.floor(Math.random() * 480);
+            clone.animate([
+              { transform: 'translateX(0) scale(1)', opacity: 1 },
+              { transform: `translateX(${deltaX}px) scale(0.86)`, opacity: 0 }
+            ], { duration: travel, easing: 'cubic-bezier(.2,.9,.2,1)', fill: 'forwards' });
+
+            setTimeout(() => {
+              clearInterval(heartsInterval);
+              clone.remove();
+              movedCount++;
+              if (movedCount === total) {
+                // when all images have traversed, show final overlay
+                showFinalOverlay();
+              }
+            }, travel + 20);
+
+          }, idx * flyDelay + 380);
         });
       }
 
@@ -898,17 +940,30 @@
           overlay = document.createElement('div');
           overlay.id = 'finalOverlay';
           overlay.className = 'final-overlay';
-          overlay.innerHTML = `<div class="line">Love you MV <span style=\"font-size:1.2em; margin-left:6px;\">❤️</span></div>`;
+          overlay.innerHTML = `<div class="line">Love you MV <span style="font-size:1.2em; margin-left:6px;">❤️</span></div>`;
           document.body.appendChild(overlay);
-          // small pulse animation
-          overlay.animate([{ transform: 'scale(0.96)' }, { transform: 'scale(1)' }], { duration: 700, iterations: 2, direction: 'alternate' });
+          // allow dismiss by clicking outside the text
+          overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+              hideFinalOverlay();
+            }
+          });
         }
+        overlay.classList.remove('exit');
         overlay.classList.add('show');
-        // after a while, gently hide floating hearts left in DOM
+        // remove leftover explosive hearts after some time
         setTimeout(() => {
           const hearts = document.querySelectorAll('.exploding-heart');
           hearts.forEach(h => h.remove());
-        }, 4000);
+        }, 4200);
+      }
+
+      function hideFinalOverlay() {
+        const overlay = document.getElementById('finalOverlay');
+        if (!overlay) return;
+        overlay.classList.remove('show');
+        overlay.classList.add('exit');
+        setTimeout(() => { if (overlay && overlay.parentNode) overlay.remove(); }, 460);
       }
       galleryItems.forEach((item, index) => {
         item.addEventListener('click', () => openGalleryModal(index));
