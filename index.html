@@ -722,7 +722,7 @@
         </div>
         <div style="display:flex; gap:10px; align-items:center; margin-top:8px;">
           <button class="fire-btn" id="fireButton" type="button">Joyeux anniversaire</button>
-          <button class="fire-btn secondary" id="goToTestBtn" type="button" disabled title="Bloqué jusqu'à la date ou déverrouillé">Voir le cadeau</button>
+          <button class="fire-btn secondary" id="goToTestBtn" type="button" title="Aller voir le cadeau">Voir le cadeau</button>
         </div>
       </div>
     </div>
@@ -784,22 +784,17 @@
         try { return new Date() >= TARGET_DATE; } catch (e) { return false; }
       }
 
-      // unlocked only when the TARGET_DATE is reached. We DO NOT persist pre-date unlocks.
+      // The gift is available immediately; the date is kept only for the countdown display.
       function isUnlocked() {
-        return isDateReached();
+        return true;
       }
 
       // update the state of the "Voir le cadeau" button based on unlock state
       const goToTestBtn = document.getElementById('goToTestBtn');
       function updateGotoTestButton() {
         if (!goToTestBtn) return;
-        if (isUnlocked()) {
-          goToTestBtn.removeAttribute('disabled');
-          goToTestBtn.title = 'Aller voir le cadeau';
-        } else {
-          goToTestBtn.setAttribute('disabled', 'true');
-          goToTestBtn.title = 'Bloqué jusqu\'à la date';
-        }
+        goToTestBtn.removeAttribute('disabled');
+        goToTestBtn.title = 'Aller voir le cadeau';
       }
 
       // open index intro content (existing behaviour extracted)
@@ -914,7 +909,6 @@
         document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
         document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
         if (diff === 0) {
-          triggerFireworks();
           fireButton.textContent = '🎉 C’est le jour !';
         }
         // ensure the "Voir le cadeau" button updates when the date is reached
@@ -1070,23 +1064,9 @@
         if (event.key === 'Escape') closeGalleryModal();
       });
 
-      // Click sur "Ouvrir mon cadeau" : soit ouvrir l'index (comportement normal),
-      // soit afficher la modale de verrouillage si la date n'est pas atteinte.
+      // Click sur "Ouvrir mon cadeau" : ouverture immédiate.
       openGiftBtn.addEventListener('click', () => {
-        if (isUnlocked()) {
-          openIntroContent();
-          return;
-        }
-        // afficher modale d'alerte / code
-        const lockOverlay = document.getElementById('lockOverlay');
-        const unlockInput = document.getElementById('unlockInput');
-        const unlockFeedback = document.getElementById('unlockFeedback');
-        if (!lockOverlay) { openIntroContent(); return; }
-        unlockInput.value = '';
-        unlockFeedback.textContent = '';
-        lockOverlay.style.display = 'flex';
-        lockOverlay.setAttribute('aria-hidden', 'false');
-        unlockInput.focus();
+        openIntroContent();
       });
 
       envelope.addEventListener('click', () => {
@@ -1193,11 +1173,7 @@
       // bouton pour aller vers test.html (visible uniquement si déverrouillé/date)
       if (goToTestBtn) {
         goToTestBtn.addEventListener('click', () => {
-          if (isUnlocked()) window.location.href = 'test.html';
-          else {
-            // show modal to explain why
-            if (lockOverlayEl) { lockOverlayEl.style.display = 'flex'; lockOverlayEl.setAttribute('aria-hidden', 'false'); }
-          }
+          window.location.href = 'test.html';
         });
       }
 
